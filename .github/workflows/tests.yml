@@ -16,6 +16,10 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
+    env:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ":memory:"
+
     strategy:
       fail-fast: true
       matrix:
@@ -45,6 +49,9 @@ jobs:
 
       - name: Generate app key
         run: php artisan key:generate
+
+      - name: Run migrations
+        run: php artisan migrate --force
 
       - name: Execute tests
         run: php artisan test
