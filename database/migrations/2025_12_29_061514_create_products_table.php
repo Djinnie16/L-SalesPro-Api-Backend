@@ -23,14 +23,19 @@ return new class extends Migration
             $table->integer('min_order_quantity')->default(1);
             $table->integer('reorder_level')->default(10);
             $table->boolean('is_active')->default(true);
-            $table->json('specifications')->nullable(); 
+            $table->json('specifications')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['sku', 'is_active']);
             $table->index(['category_id', 'subcategory_id']);
-            $table->fullText(['name', 'description']); 
         });
+
+        if (DB::getDriverName() !== 'sqlite') {
+            Schema::table('products', function (Blueprint $table) {
+                $table->fullText(['name', 'description']);
+            });
+        }
     }
 
     public function down(): void
