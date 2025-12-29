@@ -34,6 +34,9 @@ jobs:
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
           coverage: none
 
+      - name: Ensure correct PHP platform
+        run: composer config platform.php 8.4
+    
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
