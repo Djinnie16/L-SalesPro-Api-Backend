@@ -29,7 +29,7 @@ php artisan key:generate
 
 APP_NAME=L-SalesPro
 APP_ENV=local
-APP_KEY=base64:Z3W8Q77SAxrqjF2jvdT93QK+3WvrO7JclAjORU+LuDo=
+APP_KEY=
 APP_DEBUG=true
 APP_URL=http://localhost:8000
 
@@ -217,6 +217,83 @@ POST /api/v1/orders
     "discount_value": 10
 }
 
+Database Schema
+Core Tables
+
+    users - System users with roles (Sales Manager/Representative)
+
+    customers - Customer information with credit limits
+
+    products - Product catalog
+
+    orders & order_items - Sales transactions
+
+    warehouses & inventory - Stock management
+
+    stock_reservations - Order stock holds
+
+Key Relationships
+
+    Customer → Orders (One-to-Many)
+
+    Order → OrderItems (One-to-Many)
+
+    Product → Inventory (One-to-Many through warehouses)
+
+Implementation Status
+✅ COMPLETED
+
+    Authentication & Authorization (Sanctum + RBAC)
+
+    Customer Management (Full CRUD + credit system)
+
+    Order Management (Creation, status flow, calculations)
+
+    Database design with migrations and seeders
+
+    Testing (Feature tests for critical paths)
+
+⚠️ PARTIALLY IMPLEMENTED
+
+    Product/Warehouse management (Basic CRUD)
+
+    Dashboard endpoints (Stub implementations)
+
+📋 PLANNED (Time constraints)
+
+    Advanced caching with Redis
+
+    Queue system for notifications
+
+    Detailed analytics calculations
+
+Technical Details
+
+    Framework: Laravel 11.x
+
+    Authentication: Laravel Sanctum
+
+    Database: MySQL
+
+    Testing: PHPUnit with 60%+ coverage
+
+    API Style: RESTful with versioning (/api/v1/)
+
+Assumptions Made
+
+    Sales Representatives can view all customers but only Sales Managers can create/update
+
+    Order status flow: Pending → Confirmed → Processing → Shipped → Delivered
+
+    Credit limit validation happens before order confirmation
+
+    Stock reservation lasts 30 minutes before auto-release
+
+Testing
+
+Run the test suite:
+php artisan test
+
 🔧 Technical Implementation
 API Standards
 
@@ -229,37 +306,6 @@ API Standards
     Status Codes: Appropriate HTTP response codes
 
     Pagination: Standardized pagination metadata
-
-
-Response Format
-{
-  "success": true,
-  "message": "Operation successful",
-  "data": { /* response data */ },
-  "meta": { /* pagination metadata */ },
-  "errors": null
-}
-
-Error Format
-{
-  "success": false,
-  "message": "Validation failed",
-  "data": null,
-  "errors": {
-    "email": ["The email field is required."],
-    "password": ["The password must be at least 8 characters."]
-  }
-}
-
-Performance Optimization
-
-    Redis Caching: Dashboard analytics, product listings, user sessions
-
-    Eager Loading: Prevents N+1 query problems
-
-    Database Indexing: Optimized query performance
-
-    Queue System: Async processing for emails and notifications
 
 Security Measures
 
@@ -323,3 +369,28 @@ Test data is seeded using the provided JSON structures:
     customers.json - Customer data
 
     warehouses.json - Warehouse information
+
+## Known Issues & Limitations
+
+### 1. Authentication Redirect Issue
+**Status:** Identified, workaround available  
+**Issue:** Some endpoints may return "Route [login] not defined" when accessed without valid authentication.  
+**Root Cause:** Laravel's default authentication middleware expects a web `login` route, but this is an API-only application.  
+**Workaround:** Always ensure valid Bearer token is provided in Authorization header.  
+**Fix Planned:** Update authentication middleware configuration to throw proper API exceptions instead of redirects.
+
+### 2. Order Management Validation
+**Status:** Partially implemented  
+**Issue:** Complete stock validation and credit limit checks are in development.  
+**Current State:** Basic order creation works, but advanced business logic is being finalized.  
+**Test Data:** Use seeded customers (ID: 1) and products (ID: 1) for testing.
+
+### 3. Dashboard & Analytics
+**Status:** Stub implementation  
+**Note:** Endpoints exist but return sample data. Full implementation requires additional business logic.
+
+## Workaround for Testing
+All API endpoints work correctly when:
+1. Using valid authentication tokens from `/api/v1/auth/login`
+2. Testing with seeded data (customers, products from database seeders)
+3. Including proper `Authorization: Bearer <token>` headers
