@@ -27,6 +27,80 @@ composer install
 cp .env.example .env
 php artisan key:generate
 
+APP_NAME=L-SalesPro
+APP_ENV=local
+APP_KEY=base64:Z3W8Q77SAxrqjF2jvdT93QK+3WvrO7JclAjORU+LuDo=
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+# APP_MAINTENANCE_STORE=database
+
+# PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=l_salespro
+DB_USERNAME=laravel
+DB_PASSWORD=strongpassword
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+# CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=log
+MAIL_SCHEME=null
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="L-SalesPro"
+
+# Sanctum Configuration
+SANCTUM_STATEFUL_DOMAINS=localhost,localhost:3000,127.0.0.1,127.0.0.1:8000
+SANCTUM_TOKEN_PREFIX=
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+SANCTUM_STATEFUL_DOMAINS=localhost:3000
+SESSION_DOMAIN=localhost
+
+VITE_APP_NAME="L-SalesPro"
+
+
 4. Run migrations and seeders
 php artisan migrate
 php artisan db:seed
@@ -83,103 +157,65 @@ Permissions are stored as JSON array in users table:
     view_inventory - View inventory only
 
 📊 API Modules
-1. Authentication Module
+POST            api/v1/auth/login ...................... AuthController@login
+  POST            api/v1/auth/logout .................... AuthController@logout
+  POST            api/v1/auth/password/forgot ... AuthController@forgotPassword
+  POST            api/v1/auth/password/reset ..... AuthController@resetPassword
+  POST            api/v1/auth/refresh .................. AuthController@refresh
+  GET|HEAD        api/v1/auth/user ........................ AuthController@user
+  GET|HEAD        api/v1/customers customers.index › Api\V1\CustomerController…
+  POST            api/v1/customers customers.store › Api\V1\CustomerController…
+  GET|HEAD        api/v1/customers/map-data . Api\V1\CustomerController@mapData
+  GET|HEAD        api/v1/customers/{customer} customers.show › Api\V1\Customer…
+  PUT|PATCH       api/v1/customers/{customer} customers.update › Api\V1\Custom…
+  DELETE          api/v1/customers/{customer} customers.destroy › Api\V1\Custo…
+  GET|HEAD        api/v1/customers/{id}/credit-status Api\V1\CustomerControlle…
+  GET|HEAD        api/v1/customers/{id}/orders Api\V1\CustomerController@orders
+  GET|HEAD        api/v1/orders .................. Api\V1\OrderController@index
+  POST            api/v1/orders .................. Api\V1\OrderController@store
+  POST            api/v1/orders/calculate-total Api\V1\OrderController@calcula…
+  GET|HEAD        api/v1/orders/{id} .............. Api\V1\OrderController@show
+  GET|HEAD        api/v1/orders/{id}/invoice Api\V1\OrderController@generateIn…
+  PUT             api/v1/orders/{id}/status Api\V1\OrderController@updateStatus
+  GET|HEAD        api/v1/stock-transfers stock-transfers.index › Api\V1\StockT…
+  POST            api/v1/stock-transfers stock-transfers.store › Api\V1\StockT…
+  POST            api/v1/stock-transfers/{id}/approve Api\V1\StockTransferCont…
+  GET|HEAD        api/v1/stock-transfers/{stock_transfer} stock-transfers.show…
+  GET|HEAD        api/v1/warehouses warehouses.index › Api\V1\WarehouseControl…
+  POST            api/v1/warehouses warehouses.store › Api\V1\WarehouseControl…
+  GET|HEAD        api/v1/warehouses/capacity-alerts Api\V1\WarehouseController…
+  GET|HEAD        api/v1/warehouses/{id}/inventory Api\V1\WarehouseController@…
+  GET|HEAD        api/v1/warehouses/{warehouse} warehouses.show › Api\V1\Wareh…
+  PUT|PATCH       api/v1/warehouses/{warehouse} warehouses.update › Api\V1\War…
+  DELETE          api/v1/warehouses/{warehouse} warehouses.destroy › Api\V1\Wa…
+  GET|HEAD        sanctum/csrf-cookie sanctum.csrf-cookie › Laravel\Sanctum › …
+  GET|HEAD        storage/{path} ................................ storage.local
+  GET|HEAD        up .......................................................... 
 
-    POST /api/v1/auth/login - User authentication
 
-    POST /api/v1/auth/logout - User logout
+Login:
+POST /api/v1/auth/login
+Content-Type: application/json
 
-    POST /api/v1/auth/refresh - Token refresh
+{
+    "email": "david.kariuki@leysco.co.ke",
+    "password": "SecurePass123!"
+}
 
-    GET /api/v1/auth/user - Current user profile
-
-    POST /api/v1/auth/password/forgot - Password reset request
-
-    POST /api/v1/auth/password/reset - Password reset confirmation
-
-2. Dashboard Analytics Module
-
-    GET /api/v1/dashboard/summary - Overall sales metrics
-
-    GET /api/v1/dashboard/sales-performance - Sales data with date filtering
-
-    GET /api/v1/dashboard/inventory-status - Category-wise inventory summary
-
-    GET /api/v1/dashboard/top-products - Top 5 selling products
-
-3. Inventory Management Module
-
-    GET /api/v1/products - List products with pagination
-
-    GET /api/v1/products/{id} - Product details
-
-    POST /api/v1/products - Create product (Admin only)
-
-    PUT /api/v1/products/{id} - Update product (Admin only)
-
-    DELETE /api/v1/products/{id} - Soft delete product
-
-    GET /api/v1/products/{id}/stock - Real-time stock across warehouses
-
-    POST /api/v1/products/{id}/reserve - Reserve stock for order
-
-    POST /api/v1/products/{id}/release - Release reserved stock
-
-    GET /api/v1/products/low-stock - Products below reorder level
-
-4. Sales Order Management Module
-
-    GET /api/v1/orders - List orders with filters
-
-    GET /api/v1/orders/{id} - Order details
-
-    POST /api/v1/orders - Create new order
-
-    PUT /api/v1/orders/{id}/status - Update order status
-
-    GET /api/v1/orders/{id}/invoice - Generate invoice data
-
-    POST /api/v1/orders/calculate-total - Preview order calculations
-
-5. Customer Management Module
-
-    GET /api/v1/customers - List customers with pagination
-
-    GET /api/v1/customers/{id} - Customer details
-
-    POST /api/v1/customers - Create customer
-
-    PUT /api/v1/customers/{id} - Update customer
-
-    DELETE /api/v1/customers/{id} - Soft delete
-
-    GET /api/v1/customers/{id}/orders - Customer order history
-
-    GET /api/v1/customers/{id}/credit-status - Credit limit and balance
-
-    GET /api/v1/customers/map-data - Customer locations for mapping
-
-6. Warehouse Management Module
-
-    GET /api/v1/warehouses - List all warehouses
-
-    GET /api/v1/warehouses/{id}/inventory - Warehouse-specific inventory
-
-    POST /api/v1/stock-transfers - Transfer stock between warehouses
-
-    GET /api/v1/stock-transfers - Transfer history
-
-7. Notifications Module
-
-    GET /api/v1/notifications - User notifications with pagination
-
-    PUT /api/v1/notifications/{id}/read - Mark as read
-
-    PUT /api/v1/notifications/read-all - Mark all as read
-
-    DELETE /api/v1/notifications/{id} - Delete notification
-
-    GET /api/v1/notifications/unread-count - Unread count
+Order creation Example
+POST /api/v1/orders
+{
+    "customer_id": 1,
+    "items": [
+        {
+            "product_id": 1,
+            "quantity": 2,
+            "unit_price": 4500.00
+        }
+    ],
+    "discount_type": "percentage",
+    "discount_value": 10
+}
 
 🔧 Technical Implementation
 API Standards
