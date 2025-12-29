@@ -44,5 +44,13 @@ Route::prefix('v1')->group(function () {
         // Stock transfer routes
         Route::apiResource('stock-transfers', StockTransferController::class)->except(['update', 'destroy']);
         Route::post('stock-transfers/{id}/approve', [StockTransferController::class, 'approve']);
+
+        // Order routes
+        Route::get('/orders', [OrderController::class, 'index']); 
+        Route::get('/orders/{id}', [OrderController::class, 'show']); 
+        Route::post('/orders', [OrderController::class, 'store']); 
+        Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']); 
+        Route::get('/orders/{id}/invoice', [OrderController::class, 'generateInvoice']); 
+        Route::post('/orders/calculate-total', [OrderController::class, 'calculateTotal']); 
     });
 });
