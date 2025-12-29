@@ -34,28 +34,61 @@ class User extends Authenticatable
         'permissions' => 'array',
     ];
 
+    /**
+     * Check if user has a specific permission
+     */
+    public function hasPermission(string $permission): bool
+    {
+        if (!is_array($this->permissions)) {
+            return false;
+        }
+        
+        return in_array($permission, $this->permissions);
+    }
+
+    /**
+     * Check if user has any of the given permissions
+     */
+    public function hasAnyPermission(array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission($permission)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Check if user is active
+     */
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    /**
+     * Check if user is a Sales Manager
+     */
     public function isSalesManager(): bool
     {
         return $this->role === 'Sales Manager';
     }
 
+    /**
+     * Check if user is a Sales Representative
+     */
     public function isSalesRepresentative(): bool
     {
         return $this->role === 'Sales Representative';
     }
 
-    public function hasPermission(string $permission): bool
+    /**
+     * Get full name attribute
+     */
+    public function getFullNameAttribute(): string
     {
-        return in_array($permission, $this->permissions ?? []);
-    }
-
-    public function orders()
-    {
-        return $this->hasMany(Order::class);
-    }
-
-    public function activityLogs()
-    {
-        return $this->hasMany(ActivityLog::class);
+        return "{$this->first_name} {$this->last_name}";
     }
 }

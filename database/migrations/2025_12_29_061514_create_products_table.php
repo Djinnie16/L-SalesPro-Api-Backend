@@ -23,13 +23,13 @@ return new class extends Migration
             $table->integer('min_order_quantity')->default(1);
             $table->integer('reorder_level')->default(10);
             $table->boolean('is_active')->default(true);
-            $table->json('specifications')->nullable(); // For additional product details
+            $table->json('specifications')->nullable(); 
             $table->timestamps();
             $table->softDeletes();
             
             $table->index(['sku', 'is_active']);
             $table->index(['category_id', 'subcategory_id']);
-            $table->fullText(['name', 'description']); // For full-text search
+            $table->fullText(['name', 'description']); 
         });
     }
 

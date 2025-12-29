@@ -39,4 +39,24 @@ class LeysHelpers
     {
         return $amount * ($rate / 100);
     }
+
+    /**
+     * Generate transfer number
+     */
+    public static function generateTransferNumber(): string
+    {
+        $date = now()->format('Y-m');
+        $random = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+        
+        return "TF-{$date}-{$random}";
+    }
+
+    /**
+     * Calculate warehouse utilization percentage
+     */
+    public static function calculateUtilization(int $used, int $total): float
+    {
+        if ($total <= 0) return 0;
+        return round(($used / $total) * 100, 2);
+    }
 }
