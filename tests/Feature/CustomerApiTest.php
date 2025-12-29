@@ -40,6 +40,7 @@ class CustomerApiTest extends TestCase
             'payment_terms' => 30,
             'credit_limit' => 100000,
             'territory' => 'Test Region',
+            'address' => '123 Test Street, Test City', // ← ADD THIS REQUIRED FIELD
         ];
 
         $response = $this->postJson('/api/v1/customers', $data);

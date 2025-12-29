@@ -17,7 +17,6 @@ class CustomerController extends Controller
     public function __construct(LeysCustomerService $service)
     {
         $this->service = $service;
-        $this->middleware('auth:sanctum');
     }
 
     public function index(Request $request): \Illuminate\Http\JsonResponse

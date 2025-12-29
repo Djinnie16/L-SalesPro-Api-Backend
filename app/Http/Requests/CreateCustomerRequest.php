@@ -8,7 +8,7 @@ class CreateCustomerRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create_customers'); // Assume policy/gate
+         return $this->user()->role === 'Sales Manager';
     }
 
     public function rules(): array
