@@ -9,9 +9,10 @@ use App\Models\Product;
 use App\Models\StockReservation;
 use App\Repositories\OrderRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Exception;
 use Carbon\Carbon;
-use Illuminate\Support\Str; // For generating order number, or use custom helper
+use Illuminate\Support\Str;
 
 class LeysOrderService
 {
@@ -53,8 +54,10 @@ class LeysOrderService
                     throw new Exception("Insufficient stock for product {$product->name}.");
                 }
                 
-                // Find warehouse with enough stock (or use provided warehouse_id)
-                $inventory = $product->inventory()->where('available_quantity', '>=', $item['quantity'])
+                // Find warehouse with enough stock
+                // Use raw calculation instead of virtual column
+                $inventory = $product->inventory()
+                    ->whereRaw('(quantity - reserved_quantity) >= ?', [$item['quantity']])
                     ->when(isset($item['warehouse_id']), fn($q) => $q->where('warehouse_id', $item['warehouse_id']))
                     ->first();
                 
@@ -77,9 +80,9 @@ class LeysOrderService
 
             // Step 4-6: Calculate totals and create order
             $orderData = [
-                'order_number' => $this->generateOrderNumber(), // Implement in helpers
+                'order_number' => $this->generateOrderNumber(),
                 'customer_id' => $data['customer_id'],
-                'user_id' => auth()->id(),
+                'user_id' => auth()->id() ?? 1, // Fallback to user 1 if not authenticated
                 'status' => 'pending',
                 'subtotal' => $preview['subtotal'],
                 'tax_amount' => $preview['tax_amount'],
@@ -124,7 +127,7 @@ class LeysOrderService
             // Update customer balance
             $customer->updateBalance($order->total_amount);
 
-            return $order;
+            return $order->fresh(['customer', 'user', 'items.product', 'items.warehouse']);
         });
     }
 
@@ -138,7 +141,6 @@ class LeysOrderService
         switch ($data['status']) {
             case 'confirmed':
                 $updates['confirmed_at'] = now();
-                $order->confirm(); // If method exists in model
                 break;
             case 'shipped':
                 $updates['shipped_at'] = now();
@@ -152,13 +154,17 @@ class LeysOrderService
                 break;
             case 'cancelled':
                 $updates['cancelled_at'] = now();
-                $updates['cancelled_by'] = auth()->id();
-                $updates['cancellation_reason'] = $data['cancellation_reason'];
+                $updates['cancelled_by'] = auth()->id() ?? 1;
+                $updates['cancellation_reason'] = $data['cancellation_reason'] ?? null;
                 // Release reservations
                 foreach ($order->stockReservations as $reservation) {
                     $reservation->release();
-                    $inventory = $reservation->product->inventory()->where('warehouse_id', $reservation->warehouse_id)->first();
-                    $inventory->decrement('reserved_quantity', $reservation->quantity);
+                    $inventory = $reservation->product->inventory()
+                        ->where('warehouse_id', $reservation->warehouse_id)
+                        ->first();
+                    if ($inventory) {
+                        $inventory->decrement('reserved_quantity', $reservation->quantity);
+                    }
                 }
                 // Refund customer balance
                 $order->customer->decrement('current_balance', $order->total_amount);
@@ -189,16 +195,16 @@ class LeysOrderService
         $orderDiscount = $this->calculateDiscount($subtotal, $data['discount_type'] ?? null, $data['discount_value'] ?? 0);
         $discountAmount += $orderDiscount;
         $taxableAmount = $subtotal - $discountAmount;
-        $taxAmount = $this->calculateTax($taxableAmount, 16.0); // Assume default tax, or average from items
+        $taxAmount = $this->calculateTax($taxableAmount, 16.0);
 
         $total = $taxableAmount + $taxAmount + ($data['shipping_cost'] ?? 0);
 
         return [
-            'subtotal' => $subtotal,
-            'discount_amount' => $discountAmount,
-            'tax_amount' => $taxAmount,
-            'shipping_cost' => $data['shipping_cost'] ?? 0,
-            'total_amount' => $total,
+            'subtotal' => round($subtotal, 2),
+            'discount_amount' => round($discountAmount, 2),
+            'tax_amount' => round($taxAmount, 2),
+            'shipping_cost' => round($data['shipping_cost'] ?? 0, 2),
+            'total_amount' => round($total, 2),
         ];
     }
 
@@ -210,10 +216,10 @@ class LeysOrderService
         $tax = $this->calculateTax($taxable, $product->tax_rate);
 
         return [
-            'subtotal' => $subtotal,
-            'discount_amount' => $discount,
-            'tax_amount' => $tax,
-            'total_price' => $taxable + $tax,
+            'subtotal' => round($subtotal, 2),
+            'discount_amount' => round($discount, 2),
+            'tax_amount' => round($tax, 2),
+            'total_price' => round($taxable + $tax, 2),
         ];
     }
 
@@ -230,26 +236,22 @@ class LeysOrderService
 
     private function generateOrderNumber(): string
     {
-        // Implement as per helpers: "ORD-YYYY-MM-XXX"
         $date = Carbon::now();
         $prefix = 'ORD-' . $date->format('Y-m-');
-        $lastOrder = Order::where('order_number', 'like', $prefix . '%')->latest()->first();
+        $lastOrder = Order::where('order_number', 'like', $prefix . '%')->latest('id')->first();
         $seq = $lastOrder ? (int) Str::afterLast($lastOrder->order_number, '-') + 1 : 1;
         return $prefix . str_pad($seq, 3, '0', STR_PAD_LEFT);
     }
 
     public function generateInvoiceData(Order $order): array
     {
-        // Return structured data for invoice
         return [
             'order' => $order->toArray(),
             'items' => $order->items->toArray(),
             'customer' => $order->customer->toArray(),
-            // Add formatted totals, etc.
         ];
     }
 
-    // Add method to clean expired reservations (could be a scheduled task)
     public function cleanExpiredReservations(): void
     {
         $expired = StockReservation::where('status', 'reserved')
@@ -257,7 +259,9 @@ class LeysOrderService
             ->get();
         
         foreach ($expired as $reservation) {
-            $inventory = $reservation->product->inventory()->where('warehouse_id', $reservation->warehouse_id)->first();
+            $inventory = $reservation->product->inventory()
+                ->where('warehouse_id', $reservation->warehouse_id)
+                ->first();
             if ($inventory) {
                 $inventory->decrement('reserved_quantity', $reservation->quantity);
             }
