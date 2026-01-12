@@ -217,6 +217,188 @@ POST /api/v1/orders
     "discount_value": 10
 }
 
+CURL TEST COMMANDS
+AUTHENTICATION
+# 1. Login (Sales Manager)
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"david.kariuki@leysco.co.ke","password":"SecurePass123!"}'
+
+# 2. Login (Sales Rep)
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"jane.njoki@leysco.co.ke","password":"SecurePass456!"}'
+
+# 3. Get User Profile
+TOKEN="your_token_here"
+curl -X GET http://localhost:8000/api/v1/auth/user \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Logout
+curl -X POST http://localhost:8000/api/v1/auth/logout \
+  -H "Authorization: Bearer $TOKEN"
+
+# 5. Refresh Token
+curl -X POST http://localhost:8000/api/v1/auth/refresh \
+  -H "Authorization: Bearer $TOKEN"
+
+CUSTOMER MANAGEMENT
+# 1. List Customers (with pagination)
+curl -X GET "http://localhost:8000/api/v1/customers?page=1&per_page=10" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 2. Get Customer Details
+curl -X GET http://localhost:8000/api/v1/customers/1 \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. Create Customer
+curl -X POST http://localhost:8000/api/v1/customers \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Customer",
+    "email": "test@customer.com",
+    "phone": "+254700000000",
+    "credit_limit": 100000,
+    "category": "B"
+  }'
+
+# 4. Update Customer
+curl -X PUT http://localhost:8000/api/v1/customers/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"credit_limit": 600000}'
+
+# 5. Delete Customer (Soft Delete)
+curl -X DELETE http://localhost:8000/api/v1/customers/1 \
+  -H "Authorization: Bearer $TOKEN"
+
+# 6. Customer Credit Status
+curl -X GET http://localhost:8000/api/v1/customers/1/credit-status \
+  -H "Authorization: Bearer $TOKEN"
+
+# 7. Customer Order History
+curl -X GET http://localhost:8000/api/v1/customers/1/orders \
+  -H "Authorization: Bearer $TOKEN"
+
+WAREHOUSE AND INVENTORY
+# 1. List Products (with filters)
+curl -X GET "http://localhost:8000/api/v1/products?category=Engine%20Oils&page=1" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 2. Search Products
+curl -X GET "http://localhost:8000/api/v1/products?search=synthetic" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. Get Product Details
+curl -X GET http://localhost:8000/api/v1/products/1 \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Create Product (Admin only)
+curl -X POST http://localhost:8000/api/v1/products \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sku": "TEST-001",
+    "name": "Test Product",
+    "price": 5000,
+    "category_id": 1,
+    "tax_rate": 16.0
+  }'
+
+# 5. Update Product
+curl -X PUT http://localhost:8000/api/v1/products/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"price": 5500}'
+
+# 6. Delete Product (Soft Delete)
+curl -X DELETE http://localhost:8000/api/v1/products/1 \
+  -H "Authorization: Bearer $TOKEN"
+
+# 7. Get Product Stock
+curl -X GET http://localhost:8000/api/v1/products/1/stock \
+  -H "Authorization: Bearer $TOKEN"
+
+# 8. Low Stock Products
+curl -X GET http://localhost:8000/api/v1/products/low-stock \
+  -H "Authorization: Bearer $TOKEN"
+
+# 9. List Warehouses
+curl -X GET http://localhost:8000/api/v1/warehouses \
+  -H "Authorization: Bearer $TOKEN"
+
+# 10. Warehouse Inventory
+curl -X GET http://localhost:8000/api/v1/warehouses/1/inventory \
+  -H "Authorization: Bearer $TOKEN"
+
+ORDER MANAGEMENT
+# 1. Create Order (CORE TEST)
+curl -X POST http://localhost:8000/api/v1/orders \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": 1,
+    "items": [
+      {
+        "product_id": 1,
+        "quantity": 2,
+        "discount_type": "percentage",
+        "discount_value": 10
+      }
+    ],
+    "shipping_address": "Test Address"
+  }'
+
+# 2. List Orders (with filters)
+curl -X GET "http://localhost:8000/api/v1/orders?status=pending&date_from=2025-12-01" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. Get Order Details
+curl -X GET http://localhost:8000/api/v1/orders/1 \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Update Order Status
+curl -X PUT http://localhost:8000/api/v1/orders/1/status \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "confirmed"}'
+
+# Test all status transitions:
+# confirmed → processing → shipped → delivered
+# OR cancelled (before shipped)
+
+# 5. Generate Invoice Data
+curl -X GET http://localhost:8000/api/v1/orders/1/invoice \
+  -H "Authorization: Bearer $TOKEN"
+
+# 6. Calculate Order Total (Preview)
+curl -X POST http://localhost:8000/api/v1/orders/calculate-total \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": 1,
+    "items": [
+      {
+        "product_id": 1,
+        "quantity": 5
+      }
+    ]
+  }'
+
+# 7. Test Stock Reservation
+curl -X POST http://localhost:8000/api/v1/products/1/reserve \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"quantity": 3, "order_id": 1}'
+
+# 8. Release Stock
+curl -X POST http://localhost:8000/api/v1/products/1/release \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"quantity": 1, "reservation_id": 1}'
+
+
 Database Schema
 Core Tables
 

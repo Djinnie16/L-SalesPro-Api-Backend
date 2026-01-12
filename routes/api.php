@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\WarehouseController;
 use App\Http\Controllers\Api\V1\StockTransferController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\DashboardController;
 
 Route::prefix('v1')->group(function () {
     
@@ -53,5 +54,13 @@ Route::prefix('v1')->group(function () {
         Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']); 
         Route::get('/orders/{id}/invoice', [OrderController::class, 'generateInvoice']); 
         Route::post('/orders/calculate-total', [OrderController::class, 'calculateTotal']); 
+
+        //Dashboard routes
+       Route::prefix('dashboard')->group(function () {
+            Route::get('/summary', [DashboardController::class, 'getSummary']);
+            Route::get('/sales-performance', [DashboardController::class, 'getSalesPerformance']);
+            Route::get('/inventory-status', [DashboardController::class, 'getInventoryStatus']);
+            Route::get('/top-products', [DashboardController::class, 'getTopProducts']);
+        });
     });
 });

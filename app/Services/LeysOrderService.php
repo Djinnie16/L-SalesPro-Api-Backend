@@ -177,38 +177,47 @@ class LeysOrderService
         return $order;
     }
 
-    public function calculateOrderTotals(array $data): array
-    {
-        $subtotal = 0;
-        $taxAmount = 0;
-        $discountAmount = 0;
+    private function calculateOrderTotals(array $data): array
+{
+    $subtotal = 0;
+    $taxAmount = 0;
+    $discountAmount = 0;
 
-        foreach ($data['items'] as $item) {
-            $product = Product::findOrFail($item['product_id']);
-            $itemTotals = $this->calculateItemTotals($item, $product);
-            $subtotal += $itemTotals['subtotal'];
-            $taxAmount += $itemTotals['tax_amount'];
-            $discountAmount += $itemTotals['discount_amount'];
-        }
-
-        // Apply order-level discount
-        $orderDiscount = $this->calculateDiscount($subtotal, $data['discount_type'] ?? null, $data['discount_value'] ?? 0);
-        $discountAmount += $orderDiscount;
-        $taxableAmount = $subtotal - $discountAmount;
-        $taxAmount = $this->calculateTax($taxableAmount, 16.0);
-
-        $total = $taxableAmount + $taxAmount + ($data['shipping_cost'] ?? 0);
-
-        return [
-            'subtotal' => round($subtotal, 2),
-            'discount_amount' => round($discountAmount, 2),
-            'tax_amount' => round($taxAmount, 2),
-            'shipping_cost' => round($data['shipping_cost'] ?? 0, 2),
-            'total_amount' => round($total, 2),
-        ];
+    // Calculate item-level totals
+    foreach ($data['items'] as $item) {
+        $product = Product::findOrFail($item['product_id']);
+        $itemTotals = $this->calculateItemTotals($item, $product);
+        
+        $subtotal += $itemTotals['subtotal'];
+        $taxAmount += $itemTotals['tax_amount'];
+        $discountAmount += $itemTotals['discount_amount'];
     }
 
-    private function calculateItemTotals(array $item, Product $product): array
+    // Apply order-level discount (if any)
+    if (isset($data['discount_type']) && isset($data['discount_value'])) {
+        $orderDiscount = $this->calculateDiscount($subtotal, $data['discount_type'], $data['discount_value']);
+        $discountAmount += $orderDiscount;
+        
+        // Recalculate tax after order-level discount
+        $taxableAmount = $subtotal - $discountAmount;
+        
+        // Use a weighted average tax rate or default rate
+        $avgTaxRate = 16.0; // You might want to calculate this from items
+        $taxAmount = $this->calculateTax($taxableAmount, $avgTaxRate);
+    }
+
+    $total = $subtotal - $discountAmount + $taxAmount + ($data['shipping_cost'] ?? 0);
+
+    return [
+        'subtotal' => round($subtotal, 2),
+        'discount_amount' => round($discountAmount, 2),
+        'tax_amount' => round($taxAmount, 2),
+        'shipping_cost' => round($data['shipping_cost'] ?? 0, 2),
+        'total_amount' => round($total, 2),
+    ];
+}
+
+   private function calculateItemTotals(array $item, Product $product): array
     {
         $subtotal = $product->price * $item['quantity'];
         $discount = $this->calculateDiscount($subtotal, $item['discount_type'] ?? null, $item['discount_value'] ?? 0);
