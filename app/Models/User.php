@@ -91,4 +91,12 @@ class User extends Authenticatable
     {
         return "{$this->first_name} {$this->last_name}";
     }
+
+    /**
+     * User has many notifications
+     */
+    public function customNotifications()
+{
+    return $this->hasMany(\App\Models\Notification::class);
+}
 }

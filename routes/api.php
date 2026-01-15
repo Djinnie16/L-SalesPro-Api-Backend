@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\WarehouseController;
 use App\Http\Controllers\Api\V1\StockTransferController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\NotificationController;
 
 Route::prefix('v1')->group(function () {
     
@@ -62,5 +63,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/inventory-status', [DashboardController::class, 'getInventoryStatus']);
             Route::get('/top-products', [DashboardController::class, 'getTopProducts']);
         });
+
+        //Notification routes
+        Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::put('{notification}/read', [NotificationController::class, 'markAsRead']);
+        Route::put('read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::delete('{notification}', [NotificationController::class, 'destroy']);
+        Route::get('unread-count', [NotificationController::class, 'unreadCount']);
+    });
     });
 });
