@@ -15,9 +15,8 @@ class InventoryFactory extends Factory
             'warehouse_id' => Warehouse::factory(),
             'quantity' => $this->faker->numberBetween(0, 1000),
             'reserved_quantity' => $this->faker->numberBetween(0, 100),
-            'min_stock_level' => $this->faker->numberBetween(10, 50),
-            'max_stock_level' => $this->faker->numberBetween(500, 2000),
-            'location' => $this->faker->optional()->regexify('[A-Z]{2}-\d{3}'),
+            'average_cost' => $this->faker->randomFloat(2, 5, 100),
+            'last_restocked_at' => $this->faker->optional()->dateTimeBetween('-30 days', 'now'),
             'created_at' => now(),
             'updated_at' => now(),
         ];
