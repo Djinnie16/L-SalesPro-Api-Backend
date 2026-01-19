@@ -54,66 +54,70 @@ class LeysDashboardService
      * Get sales performance data with date filtering
      */
     public function getSalesPerformance($period = 'month')
-    {
-        $cacheKey = "sales_performance_{$period}";
+{
+    $cacheKey = "sales_performance_{$period}";
+    
+    return Cache::remember($cacheKey, 180, function () use ($period) {
+        $endDate = Carbon::now();
         
-        return Cache::remember($cacheKey, 180, function () use ($period) {
-            $endDate = Carbon::now();
+        switch ($period) {
+            case 'today':
+                $startDate = Carbon::today();
+                break;
+            case 'week':
+                $startDate = Carbon::now()->subWeek();
+                break;
+            case 'month':
+                $startDate = Carbon::now()->subMonth();
+                break;
+            case 'quarter':
+                $startDate = Carbon::now()->subQuarter();
+                break;
+            case 'year':
+                $startDate = Carbon::now()->subYear();
+                break;
+            default:
+                $startDate = Carbon::now()->subMonth();
+        }
+        
+        // Get all orders in the date range
+        $orders = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['confirmed', 'processing', 'shipped', 'delivered'])
+            ->get();
+        
+        // Group orders by date in PHP (database-agnostic)
+        $groupedData = $orders->groupBy(function ($order) use ($period) {
+            $date = Carbon::parse($order->created_at);
             
             switch ($period) {
                 case 'today':
-                    $startDate = Carbon::today();
-                    $groupFormat = 'H'; // Hourly
-                    break;
+                    return $date->format('H:00'); // Group by hour
                 case 'week':
-                    $startDate = Carbon::now()->subWeek();
-                    $groupFormat = 'Y-m-d'; // Daily
-                    break;
                 case 'month':
-                    $startDate = Carbon::now()->subMonth();
-                    $groupFormat = 'Y-m-d'; // Daily
-                    break;
+                    return $date->format('Y-m-d'); // Group by day
                 case 'quarter':
-                    $startDate = Carbon::now()->subQuarter();
-                    $groupFormat = 'Y-m'; // Monthly
-                    break;
                 case 'year':
-                    $startDate = Carbon::now()->subYear();
-                    $groupFormat = 'Y-m'; // Monthly
-                    break;
+                    return $date->format('Y-m'); // Group by month
                 default:
-                    $startDate = Carbon::now()->subMonth();
-                    $groupFormat = 'Y-m-d';
+                    return $date->format('Y-m-d');
             }
-            
-            // Use DATE_FORMAT for MySQL compatibility
-            $dateFormat = match($groupFormat) {
-                'H' => '%H',
-                'Y-m-d' => '%Y-%m-%d',
-                'Y-m' => '%Y-%m',
-                default => '%Y-%m-%d'
-            };
-            
-            $salesData = Order::select(
-                DB::raw("DATE_FORMAT(created_at, '{$dateFormat}') as period"),
-                DB::raw('COUNT(*) as order_count'),
-                DB::raw('SUM(total_amount) as total_sales'),
-                DB::raw('AVG(total_amount) as avg_order_value')
-            )
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereIn('status', ['confirmed', 'processing', 'shipped', 'delivered'])
-            ->groupBy('period')
-            ->orderBy('period')
-            ->get();
-            
+        })->map(function ($orders, $periodKey) {
             return [
-                'period' => $period,
-                'data' => $salesData,
-                'start_date' => $startDate->toDateString(),
-                'end_date' => $endDate->toDateString()
+                'period' => $periodKey,
+                'order_count' => $orders->count(),
+                'total_sales' => $orders->sum('total_amount'),
+                'avg_order_value' => $orders->avg('total_amount')
             ];
-        });
-    }
+        })->sortBy('period')->values();
+        
+        return [
+            'period' => $period,
+            'data' => $groupedData,
+            'start_date' => $startDate->toDateString(),
+            'end_date' => $endDate->toDateString()
+        ];
+    });
+}
     
     /**
      * Get category-wise inventory summary
